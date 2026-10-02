@@ -40,21 +40,24 @@ def defective_validation(events: list[dict[str, Any]]) -> dict[str, Any]:
 
 IMPLEMENTATIONS = {"golden": golden, "defective_duplicate": defective_duplicate, "defective_validation": defective_validation}
 
+FIXTURES = [
+    ("valid", [{"id": "a", "amount": 10}, {"id": "b", "amount": 0}]),
+    ("duplicate", [{"id": "a", "amount": 10}, {"id": "a", "amount": 10}]),
+    ("invalid", [{"id": "", "amount": 1}, {"id": "b", "amount": -1}, {"id": "c", "amount": "3"}]),
+    ("mixed", [{"id": "x", "amount": 3}, {"id": "x", "amount": 3}, {"id": "y", "amount": -2}]),
+]
+EXPECTED = {name: golden(events) for name, events in FIXTURES}
+
 
 def evaluate(implementation: str, supplied: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     if implementation not in IMPLEMENTATIONS:
         raise ValueError("Unknown implementation")
-    fixtures = [
-        ("valid", [{"id": "a", "amount": 10}, {"id": "b", "amount": 0}]),
-        ("duplicate", [{"id": "a", "amount": 10}, {"id": "a", "amount": 10}]),
-        ("invalid", [{"id": "", "amount": 1}, {"id": "b", "amount": -1}, {"id": "c", "amount": "3"}]),
-        ("mixed", [{"id": "x", "amount": 3}, {"id": "x", "amount": 3}, {"id": "y", "amount": -2}]),
-    ]
+    fixtures = list(FIXTURES)
     if supplied is not None:
         fixtures.append(("submitted_input", supplied))
     checks: list[Check] = []
     for name, events in fixtures:
-        expected = golden(events)
+        expected = EXPECTED[name] if name in EXPECTED else golden(events)
         try:
             actual = IMPLEMENTATIONS[implementation](events)
             checks.append(Check(name, actual == expected, "ok" if actual == expected else f"expected {expected}; got {actual}"))
