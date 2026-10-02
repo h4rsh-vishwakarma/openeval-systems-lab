@@ -1,0 +1,27 @@
+services:
+  api-python:
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION:?Set AWS_REGION}
+        awslogs-group: ${AWS_LOG_GROUP:?Set AWS_LOG_GROUP}
+        awslogs-stream: api-python
+  worker:
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION:?Set AWS_REGION}
+        awslogs-group: ${AWS_LOG_GROUP:?Set AWS_LOG_GROUP}
+        awslogs-stream: worker
+  client:
+    ports: !reset []
+  caddy:
+    image: caddy:2-alpine
+    ports: ["80:80", "443:443"]
+    environment: {DOMAIN: "${DOMAIN:?Set DOMAIN}"}
+    volumes:
+      - ../aws/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on: [client]
+volumes:
+  caddy_data:

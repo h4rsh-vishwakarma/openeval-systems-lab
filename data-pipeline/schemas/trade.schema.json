@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "required": {"event_id": "string", "symbol": "string", "timestamp": "ISO-8601 UTC", "price": "number > 0", "quantity": "integer > 0"},
+  "partition_columns": ["symbol", "year", "month"],
+  "evolution_policy": "New nullable fields are ignored. Changes to required field meaning require a new schema version."
+}

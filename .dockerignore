@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/dist
+**/__pycache__
+**/.pytest_cache
+.env
+data-pipeline/output
+data-pipeline/quarantine
+data-pipeline/reports
+*.parquet
+*.pem
+*.key

@@ -1,0 +1,65 @@
+"""Deterministic, fixture based software evaluation. No model judgment is used for scoring."""
+from dataclasses import dataclass
+from typing import Any
+
+from .review import local_mock_review
+
+
+@dataclass(frozen=True)
+class Check:
+    name: str
+    passed: bool
+    reason: str
+
+
+def golden(events: list[dict[str, Any]]) -> dict[str, Any]:
+    seen: set[str] = set()
+    stored: list[str] = []
+    rejected = 0
+    for event in events:
+        event_id = event.get("id")
+        amount = event.get("amount")
+        if not isinstance(event_id, str) or not event_id or type(amount) not in (int, float) or amount < 0:
+            rejected += 1
+            continue
+        if event_id not in seen:
+            seen.add(event_id)
+            stored.append(event_id)
+    return {"stored_ids": stored, "stored_count": len(stored), "rejected_count": rejected}
+
+
+def defective_duplicate(events: list[dict[str, Any]]) -> dict[str, Any]:
+    stored = [e["id"] for e in events if isinstance(e.get("id"), str) and isinstance(e.get("amount"), (int, float))]
+    return {"stored_ids": stored, "stored_count": len(stored), "rejected_count": len(events) - len(stored)}
+
+
+def defective_validation(events: list[dict[str, Any]]) -> dict[str, Any]:
+    seen = list(dict.fromkeys(str(e.get("id")) for e in events))
+    return {"stored_ids": seen, "stored_count": len(seen), "rejected_count": 0}
+
+
+IMPLEMENTATIONS = {"golden": golden, "defective_duplicate": defective_duplicate, "defective_validation": defective_validation}
+
+
+def evaluate(implementation: str, supplied: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    if implementation not in IMPLEMENTATIONS:
+        raise ValueError("Unknown implementation")
+    fixtures = [
+        ("valid", [{"id": "a", "amount": 10}, {"id": "b", "amount": 0}]),
+        ("duplicate", [{"id": "a", "amount": 10}, {"id": "a", "amount": 10}]),
+        ("invalid", [{"id": "", "amount": 1}, {"id": "b", "amount": -1}, {"id": "c", "amount": "3"}]),
+        ("mixed", [{"id": "x", "amount": 3}, {"id": "x", "amount": 3}, {"id": "y", "amount": -2}]),
+    ]
+    if supplied is not None:
+        fixtures.append(("submitted_input", supplied))
+    checks: list[Check] = []
+    for name, events in fixtures:
+        expected = golden(events)
+        try:
+            actual = IMPLEMENTATIONS[implementation](events)
+            checks.append(Check(name, actual == expected, "ok" if actual == expected else f"expected {expected}; got {actual}"))
+        except Exception as exc:
+            checks.append(Check(name, False, f"raised {type(exc).__name__}"))
+    passed = sum(check.passed for check in checks)
+    check_rows = [check.__dict__ for check in checks]
+    return {"implementation": implementation, "score": passed / len(checks), "passed": passed, "total": len(checks), "checks": check_rows, "review": local_mock_review(check_rows)}
