@@ -5,8 +5,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
       - name: Secret scan
-        run: docker run --rm -v "$PWD:/workspace" zricethezav/gitleaks:latest dir /workspace --no-banner --redact
+        run: docker run --rm -v "$PWD:/workspace" zricethezav/gitleaks:latest git /workspace --no-banner --redact
       - uses: actions/setup-python@v5
         with: {python-version: '3.11'}
       - uses: actions/setup-node@v4
