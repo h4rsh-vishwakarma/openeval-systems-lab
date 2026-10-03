@@ -46,6 +46,16 @@ def test_idempotency_and_golden_workflow(client):
     task = wait_for(client, task_id, "completed")
     assert task["result"]["score"] == 1.0
     assert task["attempts"] == 1
+    first_page = client.get(f"/tasks/{task_id}/result", params={"offset": 0, "limit": 2}).json()
+    second_page = client.get(f"/tasks/{task_id}/result", params={"offset": 2, "limit": 2}).json()
+    final_page = client.get(f"/tasks/{task_id}/result", params={"offset": 4, "limit": 2}).json()
+    assert len(first_page["result"]["checks"]) == 2
+    assert first_page["pagination"] == {"offset": 0, "limit": 2, "total": 5, "has_more": True}
+    assert len(second_page["result"]["checks"]) == 2
+    assert second_page["pagination"]["has_more"] is True
+    assert len(final_page["result"]["checks"]) == 1
+    assert final_page["pagination"]["has_more"] is False
+    assert client.get(f"/tasks/{task_id}/result", params={"limit": 0}).status_code == 400
     assert client.get(f"/tasks/{task_id}/events").json()[-1]["state"] == "completed"
 
 
