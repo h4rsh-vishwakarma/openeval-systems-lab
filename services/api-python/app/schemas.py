@@ -10,7 +10,7 @@ class TaskCreate(BaseModel):
 
 
 class Submission(BaseModel):
-    implementation: Literal["golden", "defective_duplicate", "defective_validation"]
+    implementation: Literal["golden", "defective_duplicate", "defective_validation", "cpp_golden"]
     inject_failure: Literal["none", "timeout", "invalid_output", "transient"] = "none"
 
 

@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from .review import local_mock_review
+from .cpp import evaluate_cpp_golden
 
 
 @dataclass(frozen=True)
@@ -58,6 +59,12 @@ class DefectiveValidationEvaluator:
         return defective_validation(events)
 
 
+@dataclass(frozen=True)
+class CppGoldenEvaluator:
+    def evaluate(self, events: list[dict[str, Any]]) -> dict[str, Any]:
+        return evaluate_cpp_golden(events)
+
+
 class EvaluatorRegistry:
     """Maps supported implementation identifiers to interchangeable strategies."""
 
@@ -66,6 +73,7 @@ class EvaluatorRegistry:
             "golden": GoldenEvaluator(),
             "defective_duplicate": DefectiveDuplicateEvaluator(),
             "defective_validation": DefectiveValidationEvaluator(),
+            "cpp_golden": CppGoldenEvaluator(),
         }
 
     def get(self, implementation: str) -> EvaluatorStrategy:

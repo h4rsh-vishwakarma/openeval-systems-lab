@@ -107,6 +107,7 @@ function App() {
         <label>Implementation
           <select value={variant} onChange={event => setVariant(event.target.value)}>
             <option value="golden">Golden</option>
+            <option value="cpp_golden">C++ Golden</option>
             <option value="defective_duplicate">Duplicate bug</option>
             <option value="defective_validation">Validation bug</option>
           </select>

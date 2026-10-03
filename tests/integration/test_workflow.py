@@ -68,6 +68,17 @@ def test_validation_unknown_id_and_defective_variant(client):
     assert wait_for(client, task_id, "completed")["result"]["score"] < 1.0
 
 
+def test_cpp_golden_evaluator_workflow(client):
+    events = [{"id": "cpp-a", "amount": 3}, {"id": "cpp-a", "amount": 3}, {"id": "cpp-b", "amount": 0}]
+    task_id = create(client, str(uuid.uuid4()), events).json()["id"]
+    submitted = client.post(f"/tasks/{task_id}/submit", json={"implementation": "cpp_golden", "inject_failure": "none"})
+    assert submitted.status_code == 200
+    task = wait_for(client, task_id, "completed")
+    assert task["result"]["score"] == 1.0
+    supplied_check = next(check for check in task["result"]["checks"] if check["name"] == "submitted_input")
+    assert supplied_check["passed"] is True
+
+
 def test_retry_and_dead_letter(client):
     transient_id = create(client, str(uuid.uuid4())).json()["id"]
     client.post(f"/tasks/{transient_id}/submit", json={"implementation": "golden", "inject_failure": "transient"})

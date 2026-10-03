@@ -5,7 +5,7 @@ export const taskCreateSchema = z.object({
   input: z.object({ events: z.array(z.record(z.unknown())).optional() }).default({}),
 });
 export const submissionSchema = z.object({
-  implementation: z.enum(['golden', 'defective_duplicate', 'defective_validation']),
+  implementation: z.enum(['golden', 'defective_duplicate', 'defective_validation', 'cpp_golden']),
   inject_failure: z.enum(['none', 'timeout', 'invalid_output', 'transient']).default('none'),
 });
 export type TaskCreate = z.infer<typeof taskCreateSchema>;
