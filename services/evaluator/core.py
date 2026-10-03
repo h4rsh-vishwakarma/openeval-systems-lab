@@ -1,6 +1,6 @@
 """Deterministic, fixture based software evaluation. No model judgment is used for scoring."""
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 
 from .review import local_mock_review
 
@@ -17,12 +17,10 @@ def golden(events: list[dict[str, Any]]) -> dict[str, Any]:
     stored: list[str] = []
     rejected = 0
     for event in events:
-        event_id = event.get("id")
-        amount = event.get("amount")
+        event_id, amount = event.get("id"), event.get("amount")
         if not isinstance(event_id, str) or not event_id or type(amount) not in (int, float) or amount < 0:
             rejected += 1
-            continue
-        if event_id not in seen:
+        elif event_id not in seen:
             seen.add(event_id)
             stored.append(event_id)
     return {"stored_ids": stored, "stored_count": len(stored), "rejected_count": rejected}
@@ -38,8 +36,46 @@ def defective_validation(events: list[dict[str, Any]]) -> dict[str, Any]:
     return {"stored_ids": seen, "stored_count": len(seen), "rejected_count": 0}
 
 
-IMPLEMENTATIONS = {"golden": golden, "defective_duplicate": defective_duplicate, "defective_validation": defective_validation}
+class EvaluatorStrategy(Protocol):
+    def evaluate(self, events: list[dict[str, Any]]) -> dict[str, Any]: ...
 
+
+@dataclass(frozen=True)
+class GoldenEvaluator:
+    def evaluate(self, events: list[dict[str, Any]]) -> dict[str, Any]:
+        return golden(events)
+
+
+@dataclass(frozen=True)
+class DefectiveDuplicateEvaluator:
+    def evaluate(self, events: list[dict[str, Any]]) -> dict[str, Any]:
+        return defective_duplicate(events)
+
+
+@dataclass(frozen=True)
+class DefectiveValidationEvaluator:
+    def evaluate(self, events: list[dict[str, Any]]) -> dict[str, Any]:
+        return defective_validation(events)
+
+
+class EvaluatorRegistry:
+    """Maps supported implementation identifiers to interchangeable strategies."""
+
+    def __init__(self, strategies: dict[str, EvaluatorStrategy] | None = None):
+        self._strategies = strategies or {
+            "golden": GoldenEvaluator(),
+            "defective_duplicate": DefectiveDuplicateEvaluator(),
+            "defective_validation": DefectiveValidationEvaluator(),
+        }
+
+    def get(self, implementation: str) -> EvaluatorStrategy:
+        try:
+            return self._strategies[implementation]
+        except KeyError as exc:
+            raise ValueError("Unknown implementation") from exc
+
+
+REGISTRY = EvaluatorRegistry()
 FIXTURES = [
     ("valid", [{"id": "a", "amount": 10}, {"id": "b", "amount": 0}]),
     ("duplicate", [{"id": "a", "amount": 10}, {"id": "a", "amount": 10}]),
@@ -50,8 +86,7 @@ EXPECTED = {name: golden(events) for name, events in FIXTURES}
 
 
 def evaluate(implementation: str, supplied: list[dict[str, Any]] | None = None) -> dict[str, Any]:
-    if implementation not in IMPLEMENTATIONS:
-        raise ValueError("Unknown implementation")
+    strategy = REGISTRY.get(implementation)
     fixtures = list(FIXTURES)
     if supplied is not None:
         fixtures.append(("submitted_input", supplied))
@@ -59,7 +94,7 @@ def evaluate(implementation: str, supplied: list[dict[str, Any]] | None = None) 
     for name, events in fixtures:
         expected = EXPECTED[name] if name in EXPECTED else golden(events)
         try:
-            actual = IMPLEMENTATIONS[implementation](events)
+            actual = strategy.evaluate(events)
             checks.append(Check(name, actual == expected, "ok" if actual == expected else f"expected {expected}; got {actual}"))
         except Exception as exc:
             checks.append(Check(name, False, f"raised {type(exc).__name__}"))
