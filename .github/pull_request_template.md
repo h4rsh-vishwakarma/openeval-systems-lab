@@ -1,9 +1,20 @@
-## Change
+## Summary
+<!-- What changed and why? -->
 
-## Why
+Closes #
+
+## Change type
+- [ ] Feature
+- [ ] Fix
+- [ ] Refactor
+- [ ] Documentation
 
 ## Verification
+- [ ] Unit tests
+- [ ] Integration tests (or explain why not applicable)
+- [ ] CI checks reviewed
 
-## Risks and rollback
+Commands and results:
 
-## Evidence (logs, screenshots, benchmark if applicable)
+## Review notes
+Risks, migration needs, performance evidence, and known limitations:
