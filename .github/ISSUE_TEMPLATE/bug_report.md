@@ -1,18 +1,23 @@
 ---
 name: Bug report
-about: Report a reproducible problem using synthetic data
+about: Report a reproducible defect
 title: "bug: "
 labels: bug
+assignees: ""
 ---
 
-**Steps to reproduce**
+## Summary
+Describe the observed problem.
 
-**Expected result**
+## Reproduction steps
+1.
+2.
 
-**Observed result**
+## Expected and actual behavior
 
-**Task ID or correlation ID (if relevant)**
+## Environment
+- Commit or version:
+- OS / Python / Node / Docker versions:
 
-**Environment and commit**
-
-Do not include credentials or private data.
+## Logs or screenshots
+Remove tokens, personal information, and private data before posting.
