@@ -7,7 +7,7 @@ import time
 import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -156,9 +156,15 @@ def submit(task_id: str, payload: Submission, tenant_id: str = Depends(tenant), 
 
 
 @app.get("/tasks/{task_id}/result")
-def result(task_id: str, tenant_id: str = Depends(tenant), session: Session = Depends(db_session)):
+def result(task_id: str, offset: int = Query(default=0, ge=0), limit: int = Query(default=20, ge=1, le=100), tenant_id: str = Depends(tenant), session: Session = Depends(db_session)):
     task = get_task(session, task_id, tenant_id)
-    return {"task_id": task.id, "state": task.state, "result": task.result, "error": task.error}
+    result_data = task.result
+    pagination = None
+    if result_data is not None:
+        checks = result_data.get("checks", [])
+        result_data = {**result_data, "checks": checks[offset:offset + limit]}
+        pagination = {"offset": offset, "limit": limit, "total": len(checks), "has_more": offset + limit < len(checks)}
+    return {"task_id": task.id, "state": task.state, "result": result_data, "pagination": pagination, "error": task.error}
 
 
 @app.get("/tasks/{task_id}/events")
