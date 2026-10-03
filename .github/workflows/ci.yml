@@ -14,8 +14,17 @@ jobs:
         with: {node-version: '22'}
       - name: Install Python dependencies
         run: pip install -r services/api-python/requirements.txt
+      - name: Compile and test C++ evaluator
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nlohmann-json3-dev
+          mkdir -p algorithms/build
+          g++ -std=c++17 -O2 -Wall -Wextra -Werror algorithms/evaluator.cpp algorithms/evaluator_cli.cpp -o algorithms/build/openeval-cpp-evaluator
+          g++ -std=c++17 -O2 -Wall -Wextra -Werror tests/cpp/test_evaluator.cpp algorithms/evaluator.cpp -o algorithms/build/test-cpp-evaluator
+          algorithms/build/test-cpp-evaluator
+          algorithms/build/openeval-cpp-evaluator --benchmark 10000
       - name: Evaluator unit tests
-        run: pytest tests/unit/test_evaluator.py -q
+        run: pytest tests/unit/test_evaluator.py tests/unit/test_cpp_evaluator.py -q
       - name: Gateway build and tests
         working-directory: services/api-typescript
         run: npm ci && npm run build && npm test

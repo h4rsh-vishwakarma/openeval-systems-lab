@@ -47,7 +47,7 @@ curl -X POST http://localhost:8000/tasks/TASK_ID/submit \
 curl http://localhost:8000/tasks/TASK_ID/result -H "Authorization: Bearer ${API_TOKEN}"
 ```
 
-Use `defective_duplicate` or `defective_validation` to see failing checks. Use `transient`, `timeout`, or `invalid_output` for recovery scenarios. Failed checks receive a rule based local mock code review with source references. The score is fixture based and deterministic; it is a **reproducible RL-style software evaluation environment**, not a research reinforcement learning system or an LLM judge.
+Use `defective_duplicate` or `defective_validation` to see failing checks, or `cpp_golden` to run the C++17 implementation through the worker's compiled evaluator. Use `transient`, `timeout`, or `invalid_output` for recovery scenarios. Failed checks receive a rule based local mock code review with source references. The score is fixture based and deterministic; it is a **reproducible RL-style software evaluation environment**, not a research reinforcement learning system or an LLM judge. See [C++ evaluator build and benchmark instructions](algorithms/README.md#c-golden-evaluator).
 
 ## Data pipeline
 
@@ -78,6 +78,7 @@ CI builds both TypeScript projects and containers, runs unit and integration tes
 - `services/api-python`: typed REST API, state model, authentication, validation, outbox.
 - `services/worker`: Redis queue consumer, retries, recovery, structured logs.
 - `services/evaluator`: golden and defective variants, deterministic checks.
+- `algorithms`: C++17 deterministic evaluator and repeatable benchmark.
 - `services/api-typescript`: strict TypeScript client and Express gateway.
 - `client`: React task dashboard.
 - `data-pipeline`: synthetic trade fixtures and PySpark job.

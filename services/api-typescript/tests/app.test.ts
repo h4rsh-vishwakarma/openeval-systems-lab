@@ -23,3 +23,8 @@ test('rejects invalid submission', async () => {
   const result = await request(app).post('/tasks/t1/submit').send({ implementation: 'unknown' });
   expect(result.status).toBe(400);
 });
+test('accepts the C++ golden evaluator implementation', async () => {
+  const result = await request(app).post('/tasks/t1/submit').send({ implementation: 'cpp_golden' });
+  expect(result.status).toBe(200);
+  expect(client.submit).toHaveBeenCalledWith('t1', { implementation: 'cpp_golden', inject_failure: 'none' });
+});
