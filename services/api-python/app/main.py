@@ -67,7 +67,8 @@ async def http_error(_: Request, exc: HTTPException):
 
 @app.exception_handler(RequestValidationError)
 async def validation_error(_: Request, exc: RequestValidationError):
-    return JSONResponse(status_code=400, content={"error": {"code": "validation", "message": str(exc.errors())}})
+    # Do not echo Pydantic's raw error payload: it can include submitted values.
+    return JSONResponse(status_code=400, content={"error": {"code": "validation", "message": "Invalid request"}})
 
 
 @app.exception_handler(Exception)

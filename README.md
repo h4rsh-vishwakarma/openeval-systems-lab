@@ -24,7 +24,7 @@ The worker publishes pending outbox rows to Redis, claims queued tasks under a d
 
 ## Run locally
 
-Requirements: Docker Engine with Compose. Copy `.env.example` to `.env`, set a long random `API_TOKEN`, and set `POSTGRES_PASSWORD` to a local password. Then:
+Requirements: Git, Docker Engine with the Compose plugin, and `curl` for the API examples. From a fresh clone, copy `.env.example` to `.env` (PowerShell: `Copy-Item .env.example .env`; macOS/Linux: `cp .env.example .env`), set a long random `API_TOKEN`, and set `POSTGRES_PASSWORD` to a local password. The supplied development defaults are suitable only for a local machine. Start the stack from the repository root:
 
 ```bash
 docker compose -f infra/docker/compose.yml up --build -d --wait
@@ -63,15 +63,28 @@ The pipeline validates required fields, quarantines malformed or conflicting row
 
 ## Verification
 
+Install Python 3.11 and dependencies for local unit tests (the integration tests need the running Compose stack and the same `API_TOKEN` as `.env`):
+
 ```bash
-python -m pytest tests/unit/test_evaluator.py -q
-cd services/api-typescript && npm install && npm run build && npm test
-cd ../../client && npm install && npm run build
+python -m venv .venv
+# macOS/Linux: source .venv/bin/activate
+# Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install -r services/api-python/requirements.txt
+```
+
+The commands below are run from the repository root unless a `cd` is shown. `npm ci` installs the checked-in lockfile versions.
+
+```bash
+python -m pytest tests/unit -q
+cd services/api-typescript && npm ci && npm run build && npm test
+cd ../../client && npm ci && npm run build
 cd .. && API_TOKEN=YOUR_TOKEN python -m pytest tests/integration -q
 python -m pytest tests/unit/test_pipeline.py -q
 ```
 
-CI builds both TypeScript projects and containers, runs unit and integration tests, and runs the PySpark sample test. See [CI](.github/workflows/ci.yml).
+On Windows PowerShell, set `$env:API_TOKEN='YOUR_TOKEN'` before running `python -m pytest tests/integration -q`. Start the stack with `docker compose -f infra/docker/compose.yml up --build -d --wait` first. CI builds the TypeScript projects and containers, runs evaluator unit and workflow integration tests, and runs the PySpark sample test. See [CI](.github/workflows/ci.yml).
+
+Run the fixed in-process Python evaluator workload with `python scripts/benchmark_evaluator.py`. It emits one JSON record with workload size, event counts, Python/platform versions, elapsed time and throughput. Repeat it to observe local variability; the result is not API or distributed throughput evidence. See [recorded benchmark runs and limits](docs/BENCHMARKS.md).
 
 ## Repository map
 
