@@ -61,9 +61,21 @@ def test_idempotency_and_golden_workflow(client):
 
 def test_validation_unknown_id_and_defective_variant(client):
     assert httpx.get(f"{BASE}/tasks/{uuid.uuid4()}").status_code == 401
-    assert client.post("/tasks", headers={"Idempotency-Key": str(uuid.uuid4())}, json={"scenario": "unknown"}).status_code == 400
-    assert client.get(f"/tasks/{uuid.uuid4()}").status_code == 404
+    invalid = client.post("/tasks", headers={"Idempotency-Key": str(uuid.uuid4())}, json={"scenario": "unknown", "input": {"private": "do-not-echo"}})
+    assert invalid.status_code == 400
+    assert invalid.json() == {"error": {"code": "validation", "message": "Invalid request"}}
+    assert "do-not-echo" not in invalid.text
+    missing_key = client.post("/tasks", json={"scenario": "webhook_once"})
+    assert missing_key.status_code == 400
+    assert missing_key.json()["error"]["code"] == "validation"
+    assert missing_key.json()["error"]["message"] == "Invalid request"
+    unknown = client.get(f"/tasks/{uuid.uuid4()}")
+    assert unknown.status_code == 404
+    assert unknown.json() == {"error": {"code": "404", "message": "Task not found"}}
     task_id = create(client, str(uuid.uuid4())).json()["id"]
+    bad_submission = client.post(f"/tasks/{task_id}/submit", json={"implementation": "unknown"})
+    assert bad_submission.status_code == 400
+    assert bad_submission.json()["error"] == {"code": "validation", "message": "Invalid request"}
     client.post(f"/tasks/{task_id}/submit", json={"implementation": "defective_duplicate"})
     assert wait_for(client, task_id, "completed")["result"]["score"] < 1.0
 
